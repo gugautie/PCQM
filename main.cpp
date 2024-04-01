@@ -167,6 +167,7 @@ std::pair<double, double> interpolate2_process(std::vector<std::vector<std::pair
 *
 */
 void initMatLABCH(
+	std::string weight_prefix,
 	std::vector<double>& init_grid_L, std::vector<double>& grid_L,
 	std::vector<std::vector<std::pair<double, double>>>& init_grid_AB)
 {
@@ -184,7 +185,8 @@ void initMatLABCH(
 	std::ifstream data_g;
 	std::ifstream data_a;
 	std::ifstream data_b;
-	data_f.open("L_data.txt", std::ifstream::in);
+
+	data_f.open(weight_prefix + std::string("L_data.txt"), std::ifstream::in);
 
 
 	if (!data_f.fail()) {
@@ -204,10 +206,10 @@ void initMatLABCH(
 		init_grid_L[i] = i * 0.001;
 	}
 
-	data_f.open("RegularGridInit_0_0_1.txt", std::ifstream::in);
-	data_g.open("RegularGridInit_0_0_2.txt", std::ifstream::in);
-	data_a.open("RegularGrid_0_0_1.txt", std::ifstream::in);
-	data_b.open("RegularGrid_0_0_2.txt", std::ifstream::in);
+	data_f.open(weight_prefix + std::string("RegularGridInit_0_0_1.txt"), std::ifstream::in);
+	data_g.open(weight_prefix + std::string("RegularGridInit_0_0_2.txt"), std::ifstream::in);
+	data_a.open(weight_prefix + std::string("RegularGrid_0_0_1.txt"), std::ifstream::in);
+	data_b.open(weight_prefix + std::string("RegularGrid_0_0_2.txt"), std::ifstream::in);
 
 
 	if (!data_f.fail() && !data_g.fail() && !data_a.fail() && !data_b.fail()) {
@@ -826,7 +828,7 @@ void compute_statistics(double radius, const double maxDim, PointSet& regptset, 
 	std::vector<double>& tab_hue_me, std::vector<double>& tab_hue_proj, 
 	std::vector<double>& color_lightness_field, std::vector<double>& color_chroma_field,
 	std::vector<double>& color_hue_field, std::vector<double>& color_contrast_field, std::vector<double>& color_structure_field,
-	 int threshold_knnsearch)
+	 int threshold_knnsearch, std::string outfile)
 {
 	// Computing PCQM
 	std::cout << "Computing PCQM" << std::endl;
@@ -947,7 +949,7 @@ void compute_statistics(double radius, const double maxDim, PointSet& regptset, 
 
 	//Write features and PCQM to CSV
 	write_mean_features(geom_lightness_field, geom_contrast_field, geom_structure_field, color_lightness_field, color_contrast_field, color_structure_field,
-		color_chroma_field, color_hue_field, global_regfile, global_reffile, PCQM ,"features_extracted.csv");
+		color_chroma_field, color_hue_field, global_regfile, global_reffile, PCQM, outfile);
 
 	
 
@@ -973,8 +975,8 @@ int main(int argc, char** argv) {
 	double radius_factor = 2.0;
 
 
-	if (argc < 3) {
-		std::cerr << "Usage: " << "REFERENCE.ply DISTORTED.ply (Options) (--fastquit || -fq) (-r radius)(-rx factor) "
+	if (argc < 5) {
+		std::cerr << "Usage: " << "REFERENCE.ply DISTORTED.ply PCQM_OUT PCQM_WEIGHTS (Options) (--fastquit || -fq) (-r radius)(-rx factor) "
 			"(-knn nb_point)"
 			<< std::endl;
 		return -1;
@@ -984,8 +986,11 @@ int main(int argc, char** argv) {
 	std::string reffile = argv[2];
 	std::string regfile = argv[1];
 
+	std::string outfile = argv[3];
+	std::string weight_prefix = argv[4];
+
 	std::string inv_check = "";
-	for (int i = 3; i < argc; ++i) {
+	for (int i = 5; i < argc; ++i) {
 
 		if (std::string(argv[i]) == "--fastquit" || std::string(argv[i]) == "-fq") {
 
@@ -1042,6 +1047,7 @@ int main(int argc, char** argv) {
 
 	std::cout << "Input reference point set file:  " << reffile << std::endl;
 	std::cout << "Input registered point set file:  " << regfile << std::endl;
+	std::cout << "Output file:  " << outfile << std::endl;
 
 	//Create point set structure
 	PointSet refptset;
@@ -1062,7 +1068,7 @@ int main(int argc, char** argv) {
 	std::vector<double> grid_L;
 	std::vector<std::vector<std::pair<double, double>>> init_grid_AB;
 
-	initMatLABCH(init_grid_L, grid_L, init_grid_AB);
+	initMatLABCH(weight_prefix, init_grid_L, grid_L, init_grid_AB);
 
 
 
@@ -1288,7 +1294,7 @@ int main(int argc, char** argv) {
 		meancurvaturesProj, meancurvaturesMe, geom_lightness_field, geom_contrast_field, geom_structure_field, PCQM, radius_factor,
 		tab_lstar_me, tab_lstar_proj, tab_astar_me, tab_astar_proj, tab_bstar_me, tab_bstar_proj,
 		tab_chroma_me, tab_chroma_proj, tab_hue_me, tab_hue_proj, color_lightness_field, color_chroma_field, color_hue_field, color_contrast_field,
-		color_structure_field, threshold_knnsearch);
+		color_structure_field, threshold_knnsearch, outfile);
 
 
 	std::cout << "PCQM value is : " << PCQM << std::endl;

@@ -25,11 +25,11 @@ RegularGridInit_0_0_2.txt
 To use the compiled binary  :
 
 ```
-Windows : 
-	PCQM.exe reference_objet.ply registered_object.ply -r 0.004 -knn 20 -rx 2.0	  
+Windows (untested): 
+	PCQM.exe reference_objet.ply registered_object.ply features_extracted.csv ./ -r 0.004 -knn 20 -rx 2.0
 	
 Linux : 
-	./PCQM reference_objet.ply registered_object.ply -r 0.004 -knn 20 -rx 2.0
+	./PCQM reference_objet.ply registered_object.ply features_extracted.csv ./ -r 0.004 -knn 20 -rx 2.0
 		
 ```
 
