@@ -310,9 +310,19 @@ public:
         //std::cout << "data size " << vertices->buffer.size_bytes() / vertices->count << std::endl;
         //std::cout << "expected data size " << sizeof(float3) << std::endl;
         
-		verts.resize(vertices->count);
-
-        std::memcpy(verts.data(), vertices->buffer.get(), vertices->buffer.size_bytes());
+	verts.resize(vertices->count);
+	if(tinyply::Type::FLOAT64 == file.get_elements()[0].properties[0].propertyType) {
+          // Reading vertex using double or float64 //
+          std::vector< std::array<double, 3> > tempDoubleVerts(vertices->count);
+          std::memcpy(tempDoubleVerts.data(), vertices->buffer.get(), vertices->buffer.size_bytes());
+          for (size_t i = 0; i < tempDoubleVerts.size(); ++i) {
+            for (size_t j = 0; j < 3; ++j) {
+              verts[i][j] = static_cast<float>(tempDoubleVerts[i][j]); // Convert each double to float
+            }
+          } 
+        } else {
+          std::memcpy(verts.data(), vertices->buffer.get(), vertices->buffer.size_bytes());
+        }
         for (const auto& i : verts) {
 
 			// std::cout << i.x << " " << i.y << " " << i.z << std::endl;
