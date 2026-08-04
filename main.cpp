@@ -520,22 +520,22 @@ bool write_mean_features(std::vector<double>& Curv_Lumi, std::vector<double>& Cu
 					<< ";";
 			PCQM_out_f << "regfile"
 					<< ";";
-			PCQM_out_f << "F1"
-					<< ";";
-			PCQM_out_f << "F2"
-					<< ";";
-			PCQM_out_f << "F3"
-					<< ";";
-			PCQM_out_f << "F4"
-					<< ";";
-			PCQM_out_f << "F5"
-					<< ";";
-			PCQM_out_f << "F6"
-					<< ";";
-			PCQM_out_f << "F7"
-					<< ";";
-			PCQM_out_f << "F8"
-				<< ";";
+			// PCQM_out_f << "F1"
+			// 		<< ";";
+			// PCQM_out_f << "F2"
+			// 		<< ";";
+			// PCQM_out_f << "F3"
+			// 		<< ";";
+			// PCQM_out_f << "F4"
+			// 		<< ";";
+			// PCQM_out_f << "F5"
+			// 		<< ";";
+			// PCQM_out_f << "F6"
+			// 		<< ";";
+			// PCQM_out_f << "F7"
+			// 		<< ";";
+			// PCQM_out_f << "F8"
+			// 	<< ";";
 			PCQM_out_f << "PCQM";
 
 		}
@@ -564,14 +564,14 @@ bool write_mean_features(std::vector<double>& Curv_Lumi, std::vector<double>& Cu
 		PCQM_out_f << "\n";
 		PCQM_out_f << regfile << ";";
 		PCQM_out_f << reffile << ";";
-		PCQM_out_f << mu_1 / Curv_Lumi.size() << ";";
-		PCQM_out_f << mu_2 / Curv_Lumi.size() << ";";
-		PCQM_out_f << mu_3 / Curv_Lumi.size() << ";";
-		PCQM_out_f << 1.0 - mu_4 / Curv_Lumi.size() << ";";
-		PCQM_out_f << 1.0 - mu_5 / Curv_Lumi.size() << ";";
-		PCQM_out_f << 1.0 - mu_6 / Curv_Lumi.size() << ";";
-		PCQM_out_f << 1.0 - mu_7 / Curv_Lumi.size() << ";";
-		PCQM_out_f << 1.0 - mu_8 / Curv_Lumi.size() << ";";
+		// PCQM_out_f << mu_1 / Curv_Lumi.size() << ";";
+		// PCQM_out_f << mu_2 / Curv_Lumi.size() << ";";
+		// PCQM_out_f << mu_3 / Curv_Lumi.size() << ";";
+		// PCQM_out_f << 1.0 - mu_4 / Curv_Lumi.size() << ";";
+		// PCQM_out_f << 1.0 - mu_5 / Curv_Lumi.size() << ";";
+		// PCQM_out_f << 1.0 - mu_6 / Curv_Lumi.size() << ";";
+		// PCQM_out_f << 1.0 - mu_7 / Curv_Lumi.size() << ";";
+		// PCQM_out_f << 1.0 - mu_8 / Curv_Lumi.size() << ";";
 		PCQM_out_f << PCQM << ";";
 		PCQM_out_f.close();
 
