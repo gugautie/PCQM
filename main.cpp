@@ -325,16 +325,42 @@ bool write_mean_features(const string regfile, const string reffile, double PCQM
 	std::ofstream PCQM_out_f(destination, std::ios::app);
 
 	if (PCQM_out_f.is_open()) {
-		if (length == -1) 
+		if (length == -1) //CSV header
 		{
-			PCQM_out_f << "reffile" << ";";
-			PCQM_out_f << "regfile" << ";";
+			PCQM_out_f << "reffile"
+					<< ";";
+			PCQM_out_f << "regfile"
+					<< ";";
+			PCQM_out_f << "F1"
+					<< ";";
+			PCQM_out_f << "F2"
+					<< ";";
+			PCQM_out_f << "F3"
+					<< ";";
+			PCQM_out_f << "F4"
+					<< ";";
+			PCQM_out_f << "F5"
+					<< ";";
+			PCQM_out_f << "F6"
+					<< ";";
+			PCQM_out_f << "F7"
+					<< ";";
+			PCQM_out_f << "F8"
+				<< ";";
 			PCQM_out_f << "PCQM";
 		}
 		
 		PCQM_out_f << "\n";
 		PCQM_out_f << regfile << ";";
 		PCQM_out_f << reffile << ";";
+		PCQM_out_f << 0.0 << ";";
+		PCQM_out_f << 0.0 << ";";
+		PCQM_out_f << 0.0 << ";";
+		PCQM_out_f << 0.0 << ";";
+		PCQM_out_f << 0.0 << ";";
+		PCQM_out_f << 0.0 << ";";
+		PCQM_out_f << 0.0 << ";";
+		PCQM_out_f << 0.0 << ";";
 		PCQM_out_f << PCQM << ";";
 		PCQM_out_f.close();
 
