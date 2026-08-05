@@ -60,20 +60,32 @@ inline double interpolate1_computevalue(double x0, double x1, double y0, double 
 * \fn double interpolate1_process(const std::vector<double>& init_grid, const std::vector<double>& val_grid, double x)
 * \brief Interpolate
 */
+// double interpolate1_process(const std::vector<double>& init_grid, const std::vector<double>& val_grid, double x) 
+// {
+// 	auto upper = std::upper_bound(init_grid.begin(), init_grid.end(), x);
+// 	int position = std::distance(init_grid.begin(), upper);
+
+// 	if (position < init_grid.size()) {
+// 		double res = interpolate1_computevalue(init_grid[position - 1], init_grid[position], val_grid[position - 1],
+// 			val_grid[position], x);
+// 		return res;
+// 	}
+// 	else 
+// 	{
+// 		return val_grid[position - 1];
+// 	}
+// }
+
 double interpolate1_process(const std::vector<double>& init_grid, const std::vector<double>& val_grid, double x) 
 {
-	auto upper = std::upper_bound(init_grid.begin(), init_grid.end(), x);
-	int position = std::distance(init_grid.begin(), upper);
-
-	if (position < init_grid.size()) {
-		double res = interpolate1_computevalue(init_grid[position - 1], init_grid[position], val_grid[position - 1],
-			val_grid[position], x);
-		return res;
-	}
-	else 
-	{
-		return val_grid[position - 1];
-	}
+    // Calcul d'index direct en O(1) au lieu de std::upper_bound
+    int position = static_cast<int>(x * 1000.0) + 1;
+    
+    // Sécurité pour rester dans les limites du tableau
+    if (position <= 0) return val_grid[0];
+    if (position >= init_grid.size()) return val_grid.back();
+    
+    return interpolate1_computevalue(init_grid[position - 1], init_grid[position], val_grid[position - 1], val_grid[position], x);
 }
 
 /**
@@ -156,11 +168,18 @@ void initMatLABCH(
 /**
 * \brief Compute the projection of an origin point onto the polynomial approximation of a set of neighbors given by a list of indices.
 */
+// void computeProjectionAndCurvature(const Point& origin, const std::vector<Point>& refpoints,
+// 	const std::vector<size_t>& indices, Point& proj, double& H, 
+//     MatrixXd& A, VectorXd& B, 
+//     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd>& eig,
+//     Eigen::ColPivHouseholderQR<Eigen::MatrixXd>& qr) {
+
+
 void computeProjectionAndCurvature(const Point& origin, const std::vector<Point>& refpoints,
 	const std::vector<size_t>& indices, Point& proj, double& H, 
-    MatrixXd& A, VectorXd& B, 
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd>& eig,
-    Eigen::ColPivHouseholderQR<Eigen::MatrixXd>& qr) {
+    Matrix<double, Dynamic, 6>& A, Matrix<double, Dynamic, 1>& B, 
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d>& eig, // Changed to Matrix3d
+    Eigen::ColPivHouseholderQR<Matrix<double, Dynamic, 6>>& qr) {
 
 	Matrix3d M;
 	M.setZero();
@@ -226,11 +245,17 @@ void computeProjectionAndCurvature(const Point& origin, const std::vector<Point>
 	H = 0.5 * ((1 + fx * fx) * fyy + (1 + fy * fy) * fxx - 2 * fxy * fx * fy) / pow(1 + fx * fx + fy * fy, 1.5);
 }
 
+
+
 /**
 * \brief Compute the Euclidean distance between two points.
 */
 inline double compute_distance(const Point& a, const Point& b) {
 	return std::sqrt((b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y) + (b.z - a.z) * (b.z - a.z));
+}
+
+inline double compute_distance_squared(const Point& a, const Point& b) {
+	return (b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y) + (b.z - a.z) * (b.z - a.z);
 }
 
 inline double F(double input) 
@@ -416,9 +441,12 @@ double compute_color_feature(int index_array, const size_t nMatches_Reg, const s
 
 		for (unsigned int cpt_neigh = 0; cpt_neigh < nMatches_Reg; cpt_neigh++) {
 			size_t index_reg = ret_matches_Reg[cpt_neigh].first;
+			
+			const double diff = data_me[index_reg] - mu_me_gaussian;
+			standard_dev_me += (diff * diff) * ret_weight_Reg[cpt_neigh];		
 
-			standard_dev_me += pow(data_me[index_reg] - mu_me_gaussian, 2.0) * ret_weight_Reg[cpt_neigh];
-			standard_dev_proj += pow(data_proj[index_reg] - mu_proj_gaussian, 2.0) * ret_weight_Ref[cpt_neigh];
+			const double diffBis = data_proj[index_reg] - mu_proj_gaussian;
+			standard_dev_proj += (diffBis * diffBis) * ret_weight_Ref[cpt_neigh];
 		}
 
 		if (standard_dev_me < 0) standard_dev_me = 0.0;
@@ -437,9 +465,11 @@ double compute_color_feature(int index_array, const size_t nMatches_Reg, const s
 		double covariance = 0.0;
 
 		for (unsigned int cpt_neigh = 0; cpt_neigh < nMatches_Reg; cpt_neigh++) {
-			size_t index_reg = ret_matches_Reg[cpt_neigh].first;
-			standard_dev_me += pow(data_me[index_reg] - mu_me_unweighted, 2.0);
-			standard_dev_proj += pow(data_proj[index_reg] - mu_proj_unweighted, 2.0);
+			size_t index_reg = ret_matches_Reg[cpt_neigh].first;			
+			const double diff = data_me[index_reg] - mu_me_unweighted;
+			standard_dev_me += diff*diff;
+			const double diffBis = data_proj[index_reg] - mu_proj_unweighted;
+			standard_dev_proj += diffBis * diffBis;
 			covariance += ((data_me[index_reg] - mu_me_unweighted) * (data_proj[index_reg] - mu_proj_unweighted));
 		}
 		standard_dev_me /= nb_elem;
@@ -494,11 +524,25 @@ void compute_geometric_feature(int index_array, const size_t nMatches_Reg, const
 	for (unsigned int cpt_neigh = 0; cpt_neigh < nMatches_Reg; cpt_neigh++) {
 		size_t index_reg = ret_matches_Reg[cpt_neigh].first;
 
-		variance_me += pow((std::abs(data_me[index_reg]) - mu_me_gaussian), 2.0) * ret_weight_Reg[cpt_neigh];
-		variance_proj += pow((std::abs(data_proj[index_reg]) - mu_proj_gaussian), 2.0) * ret_weight_Ref[cpt_neigh];
-		covariance +=
-			((std::abs(data_me[index_reg]) - mu_me_gaussian) * (std::abs(data_proj[index_reg]) - mu_proj_gaussian)) *
-			ret_weight_Reg[cpt_neigh];
+		// const double diff = std::abs(data_me[index_reg]) - mu_me_gaussian;
+		// variance_me += diff*diff * ret_weight_Reg[cpt_neigh];
+
+		// const double diffBis = std::abs(data_proj[index_reg]) - mu_proj_gaussian;
+		// variance_proj += diffBis*diffBis * ret_weight_Ref[cpt_neigh];
+		// covariance +=
+		// 	((std::abs(data_me[index_reg]) - mu_me_gaussian) * (std::abs(data_proj[index_reg]) - mu_proj_gaussian)) *
+		// 	ret_weight_Reg[cpt_neigh];
+
+		const double me = std::abs(data_me[index_reg]);
+		const double pr = std::abs(data_proj[index_reg]);
+
+		const double diffMe = me - mu_me_gaussian;
+		const double diffPr = pr - mu_proj_gaussian;
+
+		variance_me += diffMe * diffMe * ret_weight_Reg[cpt_neigh];
+		variance_proj += diffPr * diffPr * ret_weight_Ref[cpt_neigh];
+		covariance += diffMe * diffPr * ret_weight_Reg[cpt_neigh];
+
 	}
 	
 	double standard_dev_me = std::sqrt(variance_me / sum_distances_me);
@@ -535,15 +579,28 @@ void compute_statistics(double radius, const double maxDim, PointSet& regptset, 
         std::vector<double> ret_weight_Reg;
         std::vector<double> ret_weight_Ref;
 
+		ret_matches_Reg.reserve(256);
+		ret_weight_Reg.reserve(256);
+		ret_weight_Ref.reserve(256);		
+
+
+		const double debug_variance = radius * radius_factor * 0.5;
+		const double inv_two_var_sq =
+			1.0/(2.0*debug_variance*debug_variance);
+
+
         //FEATURES COMPUTATION
 #pragma omp for reduction(+:f3, f4, f6)
         for (int i = 0; i < regptset.npts(); i++) {
+			
+
+			ret_matches_Reg.clear();
+			ret_weight_Reg.clear();
+			ret_weight_Ref.clear();
 
             double search_radius_neighborhood = static_cast<double>(radius * radius_factor);
             Point origin = regptset.pts[i];
             
-            ret_weight_Reg.clear();
-            ret_weight_Ref.clear();
             
             double sum_distances_me = 0.0;
             double sum_distances_proj = 0.0;
@@ -552,27 +609,34 @@ void compute_statistics(double radius, const double maxDim, PointSet& regptset, 
             const size_t nMatches_Reg =
                 m_kdtree2.radiusSearch(&query_pt[0], search_radius_neighborhood * search_radius_neighborhood, ret_matches_Reg, params);
 
-            double debug_variance = search_radius_neighborhood / 2.0;
+            // double debug_variance = search_radius_neighborhood / 2.0;
 
-            for (size_t cpt_reg = 0; cpt_reg < nMatches_Reg; cpt_reg++) {
-                double d_reg = std::sqrt(ret_matches_Reg[cpt_reg].second);
-                Point p_orig_proj = projectedpointsOnRef[i];
-                Point p_neigh_proj = projectedpointsOnRef[ret_matches_Reg[cpt_reg].first];
-                double d_ref = compute_distance(p_orig_proj, p_neigh_proj);
 
-                double wi1 =
-                    1.0 / debug_variance / sqrt(2 * 3.141592) *
-                    exp(-(d_reg * d_reg) / 2.0 / debug_variance / debug_variance);
-                double wi2 =
-                    1.0 / debug_variance / sqrt(2 * 3.141592) *
-                    exp(-(d_ref * d_ref) / 2.0 / debug_variance / debug_variance);
 
-                ret_weight_Reg.push_back(wi1);
-                ret_weight_Ref.push_back(wi2);
+			// Precompute the inverse factor once outside the neighbor loop
+			// const double inv_two_var_sq = 1.0 / (2.0 * debug_variance * debug_variance);
 
-                sum_distances_me += wi1;
-                sum_distances_proj += wi2;
-            }
+
+			
+			for (size_t cpt_reg = 0; cpt_reg < nMatches_Reg; cpt_reg++) {
+				// Use the squared distance directly without std::sqrt
+				double dist_sq_reg = ret_matches_Reg[cpt_reg].second;
+				
+				Point p_orig_proj = projectedpointsOnRef[i];
+				Point p_neigh_proj = projectedpointsOnRef[ret_matches_Reg[cpt_reg].first];
+				
+				double wi1 = std::exp(-dist_sq_reg * inv_two_var_sq);
+				
+				double d_ref_sqr = compute_distance_squared(p_orig_proj, p_neigh_proj);
+				double wi2 = std::exp(-d_ref_sqr * inv_two_var_sq);
+
+				ret_weight_Reg.push_back(wi1);
+				ret_weight_Ref.push_back(wi2);
+
+				sum_distances_me += wi1;
+				sum_distances_proj += wi2;
+			}
+
 
             double constant_curvature = 1.0;
             double constant_1 = 0.002;
@@ -737,12 +801,21 @@ int main(int argc, char** argv) {
         
         nanoflann::SearchParams params;
         
-        MatrixXd A;
-        VectorXd B;
-        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eig;
-        Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr;
+        // MatrixXd A;
+        // VectorXd B;
+		Matrix<double, Dynamic, 6> A;
+		Matrix<double, Dynamic, 1> B;
 
-#pragma omp for
+        // Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eig;
+		Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eig;
+        // Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr;
+        Eigen::ColPivHouseholderQR<Matrix<double, Dynamic, 6>> qr;
+
+		ret_index_ref.reserve(512);
+		ret_index_reg.reserve(512);
+
+// #pragma omp for
+#pragma omp for schedule(dynamic,32)
         for (int i = 0; i < regptset.npts(); ++i) {
             Point origin = regptset.pts[i];
 
@@ -755,20 +828,25 @@ int main(int argc, char** argv) {
             m_kdtree.knnSearch(&query_pt[0], threshold_knnsearch, &ret_index_ref_init[0], &out_dist_sqr_ref[0]);
             m_kdtree2.knnSearch(&query_pt[0], threshold_knnsearch, &ret_index_reg_init[0], &out_dist_sqr_reg[0]);
             
-            params.sorted = true; 
+            params.sorted = false; 
 
             size_t nMatches_Ref = m_kdtree.radiusSearch(&query_pt[0], radius * radius, ret_matches_Ref, params);
             size_t nMatches_Reg = m_kdtree2.radiusSearch(&query_pt[0], radius * radius, ret_matches_Me, params);
 
-            ret_index_ref.resize(nMatches_Ref);
-            ret_index_reg.resize(nMatches_Reg);
+            // ret_index_ref.resize(nMatches_Ref);
+            // ret_index_reg.resize(nMatches_Reg);
 
+			
+			ret_index_ref.clear();
             for (size_t cpt_ref = 0; cpt_ref < nMatches_Ref; cpt_ref++) {
-                ret_index_ref[cpt_ref] = ret_matches_Ref[cpt_ref].first;
+				// ret_index_ref[cpt_ref] = ret_matches_Ref[cpt_ref].first;
+				ret_index_ref.push_back(ret_matches_Ref[cpt_ref].first);
             }
-
+			
+			ret_index_reg.clear();
             for (size_t cpt_reg = 0; cpt_reg < nMatches_Reg; cpt_reg++) {
-                ret_index_reg[cpt_reg] = ret_matches_Me[cpt_reg].first;
+                // ret_index_reg[cpt_reg] = ret_matches_Me[cpt_reg].first;
+				ret_index_reg.push_back(ret_matches_Me[cpt_reg].first);
             }
 
             double dummy_double;
